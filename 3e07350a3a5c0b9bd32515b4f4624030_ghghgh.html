@@ -1,0 +1,2289 @@
+��<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeuroTune - Personalized Playlists</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@200;400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #000;
+            --text-color: #fff;
+            --primary-color: #ff4c4c;
+            --primary-shadow: #ff1a1a;
+            --secondary-color: #ff9999;
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --loader-color: #ff9800;
+            --sp: 2.5s;
+            --parallax-speed: 0.4;
+            --slider-bg: #444;
+            --slider-fill: var(--primary-color);
+        }
+
+        [data-theme="light"] {
+            --bg-color: #c4ffea;
+            --text-color: #927779;
+            --primary-color: #ccacae;
+            --primary-shadow: #ccacae;
+            --secondary-color: #ccacae;
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --loader-color: #ccacae;
+            --slider-bg: #ccacae;
+            --slider-fill: var(--primary-color);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Oswald', sans-serif;
+            background: var(--bg-color);
+            color: var(--text-color);
+            overflow-x: hidden;
+            transition: background 0.5s ease, color 0.5s ease;
+        }
+
+        /* Wavy Background Pattern */
+        a-waves {
+            --x: -0.5rem;
+            --y: 50%;
+
+            position: fixed;
+            top: 0;
+            left: 0;
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: 0;
+        }
+
+        a-waves:before {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 0.5rem;
+            height: 0.5rem;
+            background: var(--primary-color);
+            border-radius: 50%;
+            transform: translate3d(calc(var(--x) - 50%), calc(var(--y) - 50%), 0);
+            will-change: transform;
+            content: "";
+            opacity: 0.3;
+        }
+
+        a-waves svg {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        a-waves path {
+            fill: none;
+            stroke: var(--primary-color);
+            stroke-width: 1px;
+            opacity: 0.15;
+        }
+
+        /* Intro Animation */
+        .intro-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fadeOut 1s ease-out 3.5s forwards;
+        }
+
+        .intro-logo {
+            font-size: 6rem;
+            font-weight: 900;
+            color: var(--primary-color);
+            text-shadow: 0 0 30px var(--primary-shadow);
+            transform: scale(0.5);
+            opacity: 0;
+            animation: logoEntrance 2s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.5s forwards;
+        }
+
+        @keyframes logoEntrance {
+            0% { transform: scale(0.5); opacity: 0; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes fadeOut {
+            0% { opacity: 1; visibility: visible; }
+            100% { opacity: 0; visibility: hidden; }
+        }
+
+        /* Main Content */
+        .main-content {
+            opacity: 0;
+            animation: fadeIn 1s ease-in 4s forwards;
+        }
+
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+
+        /* Loader Styles */
+        .loader-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        .loader-content {
+            width: 50vmin;
+            height: 50vmin;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transform: scale(0.65);
+            animation: spin-all calc(var(--sp) * 2) linear 0s infinite;
+        }
+
+        .loader-circle {
+            --in: 80%;
+            --ar: var(--loader-color);
+            --dt: var(--loader-color);
+            --shadow: drop-shadow(0vmin 0vmin 0.5vmin #000) drop-shadow(0vmin 1vmin 0.5vmin #0004);
+            --cross: linear-gradient(0deg, #fff0 calc(50% - 2px), #000 calc(50% - 1px) calc(50% + 1px), #fff0 calc(50% + 2px)), 
+                     linear-gradient(90deg, #fff0 calc(50% - 2px), #000 calc(50% - 1px) calc(50% + 1px), #fff0 calc(50% + 2px));
+            border: 6vmin solid var(--ar);
+            width: var(--in);
+            height: var(--in);
+            border-radius: 100%;
+            position: absolute;
+            box-sizing: border-box;
+            border-top-color: #fff0;
+            border-left-color: #fff0;
+            top: 15vmin;
+            right: -10vmin;
+            animation: spin-bot var(--sp) ease 0s infinite;
+            background-image: var(--cross), radial-gradient(var(--dt) 5.5vmin, #fff0 calc(5.5vmin + 1px));
+            background-repeat: no-repeat;
+            background-size: 3vmin 1vmin, 1vmin 3vmin, 100% 100%;
+            background-position: center center;
+            filter: var(--shadow);
+        }
+
+        .loader-circle:nth-child(2) {
+            --in: 60%;
+            top: -2vmin;
+            animation: spin-top var(--sp) ease 0s infinite;
+            transform: rotate(-45deg);
+            background-image: var(--cross), radial-gradient(var(--dt) 1.25vmin, #fff0 calc(1.25vmin + 1px));
+            right: -4vmin;
+            filter: hue-rotate(10deg) var(--shadow);
+            background-size: 1.4vmin 1vmin, 1vmin 1.4vmin, 100% 100%;
+        }
+
+        .loader-circle:nth-child(3) {
+            --in: 100%;
+            top: -5vmin;
+            left: -13vmin;
+            transform: rotate(175deg);
+            animation: spin-left var(--sp) ease calc(var(--sp) / 4) infinite;
+            background-image: var(--cross), radial-gradient(var(--dt) 9vmin, #fff0 calc(9vmin + 1px));
+            filter: hue-rotate(20deg) var(--shadow);
+            background-size: 5vmin 1vmin, 1vmin 5vmin, 100% 100%;
+        }
+
+        .loader-circle:nth-child(4) {
+            --in: 60%;
+            top: 35vmin;
+            left: -6vmin;
+            transform: rotate(-280deg);
+            animation: spin-last var(--sp) ease calc(calc(calc(var(--sp) / 4) + var(--sp)) * -1) infinite;
+            background-image: var(--cross), radial-gradient(var(--dt) 2.5vmin, #fff0 calc(2.5vmin + 1px));
+            filter: hue-rotate(30deg) var(--shadow);
+            background-size: 2vmin 1vmin, 1vmin 2vmin, 100% 100%;
+        }
+
+        @keyframes spin-all {
+            0% { transform: rotate(0deg) scale(0.65); }
+            100% { transform: rotate(360deg) scale(0.65); }
+        }
+
+        @keyframes spin-top {
+            0% { transform: rotate(-45deg); }
+            100% { transform: rotate(315deg); }
+        }
+
+        @keyframes spin-bot {
+            0%, 35% { transform: rotate(0deg); }
+            80%, 100% { transform: rotate(-360deg); }
+        }
+
+        @keyframes spin-left {
+            0%, 35% { transform: rotate(175deg); }
+            80%, 100% { transform: rotate(535deg); }
+        }
+
+        @keyframes spin-last {
+            0%, 10% { transform: rotate(-280deg); }
+            90%, 100% { transform: rotate(-640deg); }
+        }
+
+        .loader-text {
+            color: white;
+            font-size: 1.5rem;
+            margin-top: 2rem;
+            font-family: 'Oswald', sans-serif;
+            text-align: center;
+        }
+
+        /* Main Content Styles */
+        .container {
+            position: relative;
+            z-index: 10;
+            width: 90%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 5vh 0;
+            text-align: center;
+        }
+
+        .hero-section {
+            padding: 8vh 0 6vh;
+        }
+
+        h1 {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+            color: var(--primary-color);
+            text-shadow: 0 0 20px var(--primary-shadow);
+            font-weight: 700;
+            transition: all 0.3s ease;
+        }
+
+        .subtitle {
+            font-size: 1.4rem;
+            color: var(--secondary-color);
+            margin-bottom: 4rem;
+            opacity: 0.9;
+            transition: all 0.3s ease;
+        }
+
+        .top-genres {
+            margin-bottom: 4rem;
+            transform: translateY(50px);
+            opacity: 0;
+            transition: transform 1s ease, opacity 1s ease;
+        }
+
+        .top-genres.visible {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .section-title {
+            font-size: 2rem;
+            color: var(--primary-color);
+            margin-bottom: 2rem;
+            text-align: left;
+            text-shadow: 0 0 10px var(--primary-shadow);
+            transition: all 0.3s ease;
+        }
+
+        .genre-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+            perspective: 1000px;
+        }
+
+        .genre-card {
+            background: var(--card-bg);
+            border: 1px solid var(--primary-shadow);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            backdrop-filter: blur(15px);
+            box-shadow: 0 8px 25px rgba(255, 26, 26, 0.3);
+            transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transform-style: preserve-3d;
+            transform: translateZ(0);
+        }
+
+        .genre-card:hover {
+            transform: translateY(-10px) scale(1.02) rotateX(5deg) rotateY(5deg);
+            box-shadow: 0 15px 35px rgba(255, 26, 26, 0.5);
+            border-color: var(--primary-color);
+        }
+
+        .genre-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 76, 76, 0.1), transparent);
+            transition: left 0.7s;
+        }
+
+        .genre-card:hover::before {
+            left: 100%;
+        }
+
+        .genre-icon {
+            width: 100%;
+            height: 180px;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4rem;
+            color: rgba(255, 255, 255, 0.9);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .genre-title {
+            font-size: 1.4rem;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+            transition: all 0.3s ease;
+        }
+
+        .genre-description {
+            color: #ccc;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .genre-stats {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: var(--secondary-color);
+            transition: all 0.3s ease;
+        }
+
+        /* Genre Colors */
+        .genre-card:nth-child(1) .genre-icon { background: linear-gradient(135deg, #ff6b6b, #ff5252); }
+        .genre-card:nth-child(2) .genre-icon { background: linear-gradient(135deg, #4ecdc4, #26a69a); }
+        .genre-card:nth-child(3) .genre-icon { background: linear-gradient(135deg, #45b7d1, #2196f3); }
+        .genre-card:nth-child(4) .genre-icon { background: linear-gradient(135deg, #96ceb4, #4caf50); }
+        .genre-card:nth-child(5) .genre-icon { background: linear-gradient(135deg, #ffeaa7, #fdcb6e); }
+        .genre-card:nth-child(6) .genre-icon { background: linear-gradient(135deg, #dda0dd, #9c27b0); }
+        .genre-card:nth-child(7) .genre-icon { background: linear-gradient(135deg, #ff7675, #e17055); }
+        .genre-card:nth-child(8) .genre-icon { background: linear-gradient(135deg, #74b9ff, #0984e3); }
+        .genre-card:nth-child(9) .genre-icon { background: linear-gradient(135deg, #fd79a8, #e84393); }
+
+        .categories {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+            flex-wrap: wrap;
+        }
+
+        .category-chip {
+            padding: 1rem 2rem;
+            background: rgba(255, 76, 76, 0.1);
+            border: 2px solid var(--primary-color);
+            border-radius: 8px;
+            color: var(--primary-color);
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+            min-width: 180px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 700;
+        }
+
+        .category-chip::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 76, 76, 0.2), transparent);
+            transition: all 0.6s ease;
+        }
+
+        .category-chip:hover {
+            background: rgba(255, 76, 76, 0.2);
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 10px 20px rgba(255, 76, 76, 0.2);
+        }
+
+        .category-chip:hover::before {
+            left: 100%;
+        }
+
+        .category-chip.active {
+            background: var(--primary-color);
+            color: white;
+            box-shadow: 0 5px 15px rgba(255, 76, 76, 0.4);
+        }
+
+        .questionnaire {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            background: var(--card-bg);
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            margin-top: 2rem;
+            transition: all 0.6s cubic-bezier(0.165, 0.84, 0.44, 1);
+            overflow: hidden;
+            max-height: 0;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        .questionnaire.active {
+            display: flex;
+            max-height: 5000px;
+            padding: 2rem;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .question {
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+            color: var(--text-color);
+            transition: all 0.3s ease;
+            width: 100%;
+            text-align: left;
+        }
+
+        .input-field {
+            width: 80%;
+            padding: 0.8rem;
+            margin-bottom: 1.5rem;
+            border: none;
+            border-bottom: 2px solid var(--primary-color);
+            font-size: 1rem;
+            color: #fff;
+            background: transparent;
+            font-family: 'Oswald', sans-serif;
+            outline: none;
+            transition: all 0.3s ease;
+            border-radius: 4px;
+        }
+
+        .input-field:focus {
+            border-bottom-color: var(--primary-shadow);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .input-field::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .theme-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+            margin-bottom: 1.5rem;
+            width: 80%;
+            justify-content: center;
+        }
+
+        .theme-option {
+            padding: 0.6rem 1.2rem;
+            background: rgba(255, 76, 76, 0.1);
+            border: 1px solid var(--primary-color);
+            border-radius: 20px;
+            color: var(--primary-color);
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .theme-option:hover {
+            background: rgba(255, 76, 76, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .theme-option.selected {
+            background: var(--primary-color);
+            color: white;
+            box-shadow: 0 3px 10px rgba(255, 76, 76, 0.3);
+        }
+
+        .slider-container {
+            width: 80%;
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            color: var(--secondary-color);
+        }
+
+        .slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: var(--slider-bg);
+            outline: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 0 5px var(--primary-shadow);
+        }
+
+        .slider::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .slider::-moz-range-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 0 5px var(--primary-shadow);
+        }
+
+        .decade-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+            margin-bottom: 1.5rem;
+            width: 80%;
+            justify-content: center;
+        }
+
+        .decade-filter {
+            padding: 0.6rem 1rem;
+            background: rgba(255, 76, 76, 0.1);
+            border: 1px solid var(--primary-color);
+            border-radius: 20px;
+            color: var(--primary-color);
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .decade-filter:hover {
+            background: rgba(255, 76, 76, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .decade-filter.selected {
+            background: var(--primary-color);
+            color: white;
+            box-shadow: 0 3px 10px rgba(255, 76, 76, 0.3);
+        }
+
+        .submit-btn {
+            padding: 0.8rem 2rem;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 2rem;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 1rem;
+            font-family: 'Oswald', sans-serif;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .submit-btn::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 5px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.5);
+            opacity: 0;
+            border-radius: 100%;
+            transform: scale(1, 1) translate(-50%, -50%);
+            transform-origin: 50% 50%;
+        }
+
+        .submit-btn:focus:not(:active)::after {
+            animation: ripple 1s ease-out;
+        }
+
+        @keyframes ripple {
+            0% {
+                transform: scale(0, 0);
+                opacity: 0.5;
+            }
+            100% {
+                transform: scale(20, 20);
+                opacity: 0;
+            }
+        }
+
+        .submit-btn:hover {
+            background: var(--primary-shadow);
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(255, 26, 26, 0.4);
+        }
+
+        .trending-playlists {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 2rem;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.6s cubic-bezier(0.165, 0.84, 0.44, 1);
+        }
+
+        .trending-playlists.active {
+            display: flex;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .playlist-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding: 0.8rem 1.5rem;
+            background: var(--card-bg);
+            border-radius: 0.8rem;
+            transition: all 0.3s ease;
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .playlist-item:hover {
+            transform: translateX(10px);
+            box-shadow: 0 5px 15px rgba(255, 76, 76, 0.3);
+        }
+
+        .playlist-cover {
+            width: 50px;
+            height: 50px;
+            margin-right: 1rem;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .playlist-link {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .playlist-link:hover {
+            color: var(--primary-shadow);
+            text-decoration: underline;
+        }
+
+        .floating-action {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 60px;
+            height: 60px;
+            background: var(--primary-color);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(255, 76, 76, 0.4);
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .floating-action:hover {
+            transform: scale(1.1) rotate(90deg);
+            box-shadow: 0 6px 25px rgba(255, 76, 76, 0.6);
+        }
+
+        .theme-toggle {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(52, 152, 219, 0.5);
+            transition: all 0.3s ease;
+            z-index: 100;
+            font-size: 1.2rem;
+        }
+
+        .theme-toggle:hover {
+            transform: scale(1.1) rotate(30deg);
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.7);
+        }
+
+        /* Playlist Results Styles */
+        .playlist-results {
+            background: var(--card-bg);
+            border-radius: 1rem;
+            padding: 2rem;
+            margin: 2rem auto;
+            box-shadow: 0 8px 25px rgba(255, 26, 26, 0.3);
+            max-width: 800px;
+            transform: translateY(20px);
+            opacity: 0;
+            transition: all 0.6s cubic-bezier(0.165, 0.84, 0.44, 1);
+        }
+
+        .playlist-results.visible {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .playlist-results h3 {
+            color: var(--primary-color);
+            margin-bottom: 1.5rem;
+            font-size: 1.8rem;
+            text-align: center;
+        }
+
+        .tracks-list {
+            max-height: 500px;
+            overflow-y: auto;
+            margin-bottom: 1.5rem;
+        }
+
+        .track-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.8rem;
+            margin-bottom: 0.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .track-item:hover {
+            background: rgba(255, 76, 76, 0.1);
+            transform: translateX(5px);
+        }
+
+        .track-number {
+            color: var(--secondary-color);
+            font-weight: bold;
+            min-width: 2rem;
+            text-align: right;
+        }
+
+        .track-image {
+            width: 50px;
+            height: 50px;
+            border-radius: 5px;
+            object-fit: cover;
+            transition: all 0.3s ease;
+        }
+
+        .track-item:hover .track-image {
+            transform: scale(1.1);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .track-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .track-name {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: bold;
+            display: block;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            transition: all 0.3s ease;
+        }
+
+        .track-name:hover {
+            color: var(--primary-shadow);
+        }
+
+        .track-artist {
+            color: var(--secondary-color);
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .track-preview {
+            width: 150px;
+            height: 30px;
+            transition: all 0.3s ease;
+        }
+
+        .track-preview:hover {
+            transform: scale(1.05);
+        }
+
+        .playlist-actions {
+            text-align: center;
+            margin-top: 1.5rem;
+        }
+
+        .save-playlist-btn {
+            padding: 0.8rem 2rem;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 2rem;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Oswald', sans-serif;
+        }
+
+        .save-playlist-btn:hover {
+            background: var(--primary-shadow);
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(255, 26, 26, 0.4);
+        }
+
+        /* Mini Player Styles */
+        .mini-player {
+            position: fixed;
+            bottom: -100px;
+            left: 0;
+            width: 100%;
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.3);
+            transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+            z-index: 90;
+        }
+
+        .mini-player.active {
+            bottom: 0;
+        }
+
+        .mini-player-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex: 1;
+            max-width: 40%;
+        }
+
+        .mini-player-image {
+            width: 50px;
+            height: 50px;
+            border-radius: 5px;
+            object-fit: cover;
+        }
+
+        .mini-player-text {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .mini-player-title {
+            color: var(--primary-color);
+            font-weight: bold;
+            margin-bottom: 0.2rem;
+        }
+
+        .mini-player-artist {
+            color: var(--secondary-color);
+            font-size: 0.8rem;
+        }
+
+        .mini-player-controls {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            flex: 1;
+            justify-content: center;
+        }
+
+        .mini-player-btn {
+            background: transparent;
+            border: none;
+            color: var(--primary-color);
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .mini-player-btn:hover {
+            background: rgba(255, 76, 76, 0.2);
+            transform: scale(1.1);
+        }
+
+        .mini-player-progress {
+            flex: 1;
+            max-width: 40%;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .mini-player-time {
+            color: var(--secondary-color);
+            font-size: 0.8rem;
+            min-width: 40px;
+        }
+
+        .mini-player-bar {
+            flex: 1;
+            height: 4px;
+            background: var(--slider-bg);
+            border-radius: 2px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .mini-player-progress-fill {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 0%;
+            background: var(--primary-color);
+            transition: width 0.1s linear;
+        }
+
+        /* User Profile Styles */
+        .user-profile {
+            position: fixed;
+            top: 2rem;
+            left: 2rem;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            cursor: pointer;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .user-avatar:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 10px var(--primary-shadow);
+        }
+
+        .user-name {
+            color: var(--primary-color);
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .user-dropdown {
+            position: absolute;
+            top: 60px;
+            left: 0;
+            background: var(--card-bg);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            width: 200px;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            z-index: 110;
+        }
+
+        .user-profile:hover .user-dropdown {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .dropdown-item {
+            padding: 0.5rem 0;
+            color: var(--text-color);
+            transition: all 0.2s ease;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .dropdown-item:last-child {
+            border-bottom: none;
+        }
+
+        .dropdown-item:hover {
+            color: var(--primary-color);
+            transform: translateX(5px);
+        }
+
+        /* Stats Counter Styles */
+        .stats-counter {
+            position: fixed;
+            bottom: 2rem;
+            left: 2rem;
+            background: var(--card-bg);
+            padding: 0.8rem 1.2rem;
+            border-radius: 2rem;
+            font-size: 0.9rem;
+            color: var(--secondary-color);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .stats-icon {
+            color: var(--primary-color);
+        }
+
+        /* Responsive Styles */
+        @media (max-width: 768px) {
+            .intro-logo {
+                font-size: 4rem;
+            }
+            
+            h1 {
+                font-size: 2.5rem;
+            }
+            
+            .subtitle {
+                font-size: 1.1rem;
+            }
+            
+            .genre-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .categories {
+                gap: 1rem;
+            }
+
+            .category-chip {
+                min-width: 140px;
+                padding: 0.8rem 1.2rem;
+                font-size: 0.9rem;
+            }
+
+            .theme-toggle {
+                top: 1rem;
+                right: 1rem;
+            }
+
+            .track-item {
+                flex-wrap: wrap;
+            }
+
+            .track-preview {
+                width: 100%;
+                margin-top: 0.5rem;
+            }
+
+            .mini-player {
+                flex-direction: column;
+                gap: 1rem;
+                padding: 1rem;
+            }
+
+            .mini-player-info,
+            .mini-player-controls,
+            .mini-player-progress {
+                max-width: 100%;
+                width: 100%;
+            }
+
+            .user-profile {
+                top: 1rem;
+                left: 1rem;
+            }
+
+            .stats-counter {
+                bottom: 1rem;
+                left: 1rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .intro-logo {
+                font-size: 3rem;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .subtitle {
+                font-size: 1rem;
+            }
+
+            .category-chip {
+                min-width: 120px;
+                padding: 0.6rem 1rem;
+                font-size: 0.8rem;
+            }
+
+            .questionnaire {
+                padding: 1rem;
+            }
+
+            .input-field {
+                width: 95%;
+            }
+
+            .theme-options,
+            .decade-filters {
+                width: 95%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Wavy Background Pattern -->
+    <a-waves>
+        <svg class="js-svg"></svg>
+    </a-waves>
+
+    <!-- Intro Animation -->
+    <div class="intro-overlay">
+        <div class="intro-logo">NeuroTune</div>
+    </div>
+
+    <!-- Loader Overlay -->
+    <div class="loader-overlay">
+        <div class="loader-content">
+            <div class="loader-circle"></div>
+            <div class="loader-circle"></div>
+            <div class="loader-circle"></div>
+            <div class="loader-circle"></div>
+        </div>
+        <div class="loader-text">Creating your personalized playlist...</div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- User Profile -->
+        <div class="user-profile">
+            <div class="user-avatar">NT</div>
+            <div class="user-name">NeuroTune</div>
+            <div class="user-dropdown">
+                <div class="dropdown-item">My Profile</div>
+                <div class="dropdown-item">Preferences</div>
+                <div class="dropdown-item">Saved Playlists</div>
+                <div class="dropdown-item">Log Out</div>
+            </div>
+        </div>
+
+        <!-- Stats Counter -->
+        <div class="stats-counter">
+            <span class="stats-icon">👥</span>
+            <span id="impressions-counter">0</span> users connected
+        </div>
+
+        <div class="container">
+            <div class="hero-section">
+                <h1>NeuroTune</h1>
+                <p class="subtitle">Your AI-powered music companion for personalized listening experiences</p>
+            </div>
+
+            <div class="categories">
+                <div class="category-chip" onclick="showArtistQuestionnaire()">By Artist</div>
+                <div class="category-chip" onclick="showMoodQuestionnaire()">Mood Based</div>
+                <div class="category-chip" onclick="showTrendingPlaylists()">Trending</div>
+            </div>
+
+            <div id="artist-questionnaire" class="questionnaire">
+                <div class="question">Make a playlist based on your favourite artists</div>
+                <input type="text" class="input-field" id="artist-input" placeholder="Enter your favourite artists (comma separated)">
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span>Energy Level</span>
+                        <span id="energy-value">50%</span>
+                    </div>
+                    <input type="range" min="0" max="100" value="50" class="slider" id="energy-slider">
+                </div>
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span>Danceability</span>
+                        <span id="danceability-value">50%</span>
+                    </div>
+                    <input type="range" min="0" max="100" value="50" class="slider" id="danceability-slider">
+                </div>
+                <button class="submit-btn" onclick="submitArtistQuestionnaire()">Generate Playlist</button>
+            </div>
+
+            <div id="mood-questionnaire" class="questionnaire">
+                <div class="question">Describe your theme in a word or a sentence</div>
+                <input type="text" class="input-field" id="theme-input" placeholder="E.g. 'Chill summer vibes' or 'Workout motivation'">
+                
+                <div class="question">Or select from popular themes:</div>
+                <div class="theme-options">
+                    <div class="theme-option" onclick="selectThemeOption(this, 'Focus & Concentration')">Focus</div>
+                    <div class="theme-option" onclick="selectThemeOption(this, 'Relax & Unwind')">Relax</div>
+                    <div class="theme-option" onclick="selectThemeOption(this, 'Energy Boost')">Energy</div>
+                    <div class="theme-option" onclick="selectThemeOption(this, 'Workout Motivation')">Workout</div>
+                    <div class="theme-option" onclick="selectThemeOption(this, 'Chill Vibes')">Chill</div>
+                </div>
+                
+                <div class="question">Artists you want to include</div>
+                <input type="text" class="input-field" id="include-artists-input" placeholder="Enter artists (comma separated)">
+                
+                <div class="question">Artists you want to avoid</div>
+                <input type="text" class="input-field" id="exclude-artists-input" placeholder="Enter artists to avoid (comma separated)">
+                
+                <div class="question">Any custom prompt you want to add</div>
+                <input type="text" class="input-field" id="custom-prompt-input" placeholder="E.g. 'Songs with strong bass' or 'Acoustic versions only'">
+                
+                <div class="question">Select decade filters (optional)</div>
+                <div class="decade-filters">
+                    <div class="decade-filter" onclick="toggleDecadeFilter(this, '1960s')">60s</div>
+                    <div class="decade-filter" onclick="toggleDecadeFilter(this, '1970s')">70s</div>
+                    <div class="decade-filter" onclick="toggleDecadeFilter(this, '1980s')">80s</div>
+                    <div class="decade-filter" onclick="toggleDecadeFilter(this, '1990s')">90s</div>
+                    <div class="decade-filter" onclick="toggleDecadeFilter(this, '2000s')">00s</div>
+                    <div class="decade-filter" onclick="toggleDecadeFilter(this, '2010s')">10s</div>
+                    <div class="decade-filter" onclick="toggleDecadeFilter(this, '2020s')">20s</div>
+                </div>
+                
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span>Energy Level</span>
+                        <span id="mood-energy-value">50%</span>
+                    </div>
+                    <input type="range" min="0" max="100" value="50" class="slider" id="mood-energy-slider">
+                </div>
+                
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span>Popularity</span>
+                        <span id="popularity-value">50%</span>
+                    </div>
+                    <input type="range" min="0" max="100" value="50" class="slider" id="popularity-slider">
+                </div>
+                
+                <button class="submit-btn" onclick="submitMoodQuestionnaire()">Generate Playlist</button>
+            </div>
+
+            <div id="trending-playlists" class="trending-playlists">
+                <!-- Trending playlists will be loaded here dynamically -->
+            </div>
+
+            <!-- Playlist Results Container -->
+            <div id="playlist-results-container" style="display: none;"></div>
+
+            <div class="top-genres">
+                <h2 class="section-title">Top 9 Genre Tracks</h2>
+                <div class="genre-grid">
+                    <!-- Genre cards will be loaded here dynamically -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Mini Player -->
+        <div class="mini-player">
+            <div class="mini-player-info">
+                <img src="" alt="Track" class="mini-player-image" id="mini-player-image">
+                <div class="mini-player-text">
+                    <div class="mini-player-title" id="mini-player-title">No track playing</div>
+                    <div class="mini-player-artist" id="mini-player-artist">Select a track to play</div>
+                </div>
+            </div>
+            <div class="mini-player-controls">
+                <button class="mini-player-btn" onclick="skipPreviousTrack()">⏮</button>
+                <button class="mini-player-btn" onclick="togglePlayPause()" id="play-pause-btn">▶</button>
+                <button class="mini-player-btn" onclick="skipNextTrack()">⏭</button>
+            </div>
+            <div class="mini-player-progress">
+                <span class="mini-player-time" id="current-time">0:00</span>
+                <div class="mini-player-bar">
+                    <div class="mini-player-progress-fill" id="progress-fill"></div>
+                </div>
+                <span class="mini-player-time" id="duration">0:30</span>
+            </div>
+        </div>
+
+        <button class="floating-action" onclick="showCreatePlaylist()">+</button>
+        <div class="theme-toggle" onclick="toggleTheme()">☀️</div>
+    </div>
+
+    <script>
+        // Noise.js from https://github.com/josephg/noisejs
+        // Simple 2D noise implementation
+        class Noise {
+            constructor(seed) {
+                this.p = new Uint8Array(256);
+                this.perm = new Uint8Array(512);
+                this.permMod12 = new Uint8Array(512);
+                
+                const s = (seed || Math.random()) * 65536;
+                for (let i = 0; i < 256; i++) {
+                    this.p[i] = (Math.sin(i * s) * 65536) & 255;
+                }
+                
+                for (let i = 0; i < 512; i++) {
+                    this.perm[i] = this.p[i & 255];
+                    this.permMod12[i] = this.perm[i] % 12;
+                }
+            }
+            
+            grad3(i, x, y, z) {
+                const h = i & 15;
+                const u = h < 8 ? x : y;
+                const v = h < 4 ? y : h === 12 || h === 14 ? x : z;
+                return ((h & 1) === 0 ? u : -u) + ((h & 2) === 0 ? v : -v);
+            }
+            
+            dot(g, x, y) {
+                return g[0] * x + g[1] * y;
+            }
+            
+            perlin2(x, y) {
+                const X = Math.floor(x) & 255;
+                const Y = Math.floor(y) & 255;
+                x -= Math.floor(x);
+                y -= Math.floor(y);
+                const u = x * x * x * (x * (x * 6 - 15) + 10);
+                const v = y * y * y * (y * (y * 6 - 15) + 10);
+                const A = this.perm[X] + Y;
+                const B = this.perm[X + 1] + Y;
+                
+                const grad = [
+                    [1,1], [-1,1], [1,-1], [-1,-1],
+                    [1,0], [-1,0], [1,0], [-1,0],
+                    [0,1], [0,-1], [0,1], [0,-1]
+                ];
+                
+                const g00 = grad[this.permMod12[A]];
+                const g01 = grad[this.permMod12[A + 1]];
+                const g10 = grad[this.permMod12[B]];
+                const g11 = grad[this.permMod12[B + 1]];
+                
+                const n00 = this.dot(g00, x, y);
+                const n01 = this.dot(g01, x, y - 1);
+                const n10 = this.dot(g10, x - 1, y);
+                const n11 = this.dot(g11, x - 1, y - 1);
+                
+                const nx0 = n00 + (n10 - n00) * u;
+                const nx1 = n01 + (n11 - n01) * u;
+                
+                return nx0 + (nx1 - nx0) * v;
+            }
+        }
+
+        class AWaves extends HTMLElement {
+            /**
+             * Init
+             */
+            connectedCallback() {
+                // Elements
+                this.svg = this.querySelector('.js-svg')
+
+                // Properties
+                this.mouse = {
+                    x: -10,
+                    y: 0,
+                    lx: 0,
+                    ly: 0,
+                    sx: 0,
+                    sy: 0,
+                    v: 0,
+                    vs: 0,
+                    a: 0,
+                    set: false,
+                }
+
+                this.lines = []
+                this.paths = []
+                this.noise = new Noise(Math.random())
+
+                // Init
+                this.setSize()
+                this.setLines()
+
+                this.bindEvents()
+                
+                // RAF
+                requestAnimationFrame(this.tick.bind(this))
+            }
+
+            /**
+             * Bind events
+             */
+            bindEvents() {
+                window.addEventListener('resize', this.onResize.bind(this))
+                
+                window.addEventListener('mousemove', this.onMouseMove.bind(this))
+                this.addEventListener('touchmove', this.onTouchMove.bind(this))
+            }
+
+            /**
+             * Resize handler
+             */
+            onResize() {
+                this.setSize()
+                this.setLines()
+            }
+
+            /**
+             * Mouse handler
+             */
+            onMouseMove(e) {
+                this.updateMousePosition(e.pageX, e.pageY)
+            }
+
+            /**
+             * Touch handler
+             */
+            onTouchMove(e) {
+                e.preventDefault()
+
+                const touch = e.touches[0]
+                this.updateMousePosition(touch.clientX, touch.clientY)
+            }
+
+            /**
+             * Update mouse position
+             */
+            updateMousePosition(x, y) {
+                const { mouse } = this
+
+                mouse.x = x - this.bounding.left
+                mouse.y = y - this.bounding.top + window.scrollY
+
+                if (!mouse.set) {
+                    mouse.sx = mouse.x
+                    mouse.sy = mouse.y
+                    mouse.lx = mouse.x
+                    mouse.ly = mouse.y
+
+                    mouse.set = true
+                }
+            }
+
+            /**
+             * Set size
+             */
+            setSize() {
+                this.bounding = this.getBoundingClientRect()
+
+                this.svg.style.width = `${this.bounding.width}px`
+                this.svg.style.height = `${this.bounding.height}px`
+            }
+
+            /**
+             * Set lines
+             */
+            setLines() {
+                const { width, height } = this.bounding
+                
+                this.lines = []
+
+                this.paths.forEach((path) => {
+                    path.remove()
+                })
+                this.paths = []
+
+                const xGap = 10
+                const yGap = 32
+
+                const oWidth = width + 200
+                const oHeight = height + 30
+
+                const totalLines = Math.ceil(oWidth / xGap)
+                const totalPoints = Math.ceil(oHeight / yGap)
+
+                const xStart = (width - xGap * totalLines) / 2
+                const yStart = (height - yGap * totalPoints) / 2
+
+                for (let i = 0; i <= totalLines; i++) {
+                    const points = []
+
+                    for (let j = 0; j <= totalPoints; j++) {
+                        const point = {
+                            x: xStart + xGap * i,
+                            y: yStart + yGap * j,
+                            wave: { x: 0, y: 0 },
+                            cursor: { x: 0, y: 0, vx: 0, vy: 0 },
+                        }
+
+                        points.push(point)
+                    }
+
+                    // Create path
+                    const path = document.createElementNS(
+                        'http://www.w3.org/2000/svg',
+                        'path'
+                    )
+                    path.classList.add('a__line')
+
+                    this.svg.appendChild(path)
+                    this.paths.push(path)
+
+                    // Add points
+                    this.lines.push(points)
+                }
+            }
+
+            /**
+             * Move points
+             */
+            movePoints(time) {
+                const { lines, mouse, noise } = this
+
+                lines.forEach((points) => {
+                    points.forEach((p) => {
+                        // Wave movement
+                        const move =
+                                noise.perlin2(
+                                    (p.x + time * 0.0125) * 0.002,
+                                    (p.y + time * 0.005) * 0.0015
+                                ) * 12
+                        p.wave.x = Math.cos(move) * 32
+                        p.wave.y = Math.sin(move) * 16
+
+                        // Mouse effect
+                        const dx = p.x - mouse.sx
+                        const dy = p.y - mouse.sy
+                        const d = Math.hypot(dx, dy)
+                        const l = Math.max(175, mouse.vs)
+
+                        if (d < l) {
+                            const s = 1 - d / l
+                            const f = Math.cos(d * 0.001) * s
+
+                            p.cursor.vx += Math.cos(mouse.a) * f * l * mouse.vs * 0.00065
+                            p.cursor.vy += Math.sin(mouse.a) * f * l * mouse.vs * 0.00065
+                        }
+
+                        p.cursor.vx += (0 - p.cursor.x) * 0.005 // String tension
+                        p.cursor.vy += (0 - p.cursor.y) * 0.005
+
+                        p.cursor.vx *= 0.925 // Friction/duration
+                        p.cursor.vy *= 0.925
+
+                        p.cursor.x += p.cursor.vx * 2 // Strength
+                        p.cursor.y += p.cursor.vy * 2
+
+                        p.cursor.x = Math.min(100, Math.max(-100, p.cursor.x)) // Clamp movement
+                        p.cursor.y = Math.min(100, Math.max(-100, p.cursor.y))
+                    })
+                })
+            }
+
+            /**
+             * Get point coordinates with movement added
+             */
+            moved(point, withCursorForce = true) {
+                const coords = {
+                    x: point.x + point.wave.x + (withCursorForce ? point.cursor.x : 0),
+                    y: point.y + point.wave.y + (withCursorForce ? point.cursor.y : 0),
+                }
+
+                // Round to 2 decimals
+                coords.x = Math.round(coords.x * 10) / 10
+                coords.y = Math.round(coords.y * 10) / 10
+
+                return coords
+            }
+
+            /**
+             * Draw lines
+             */
+            drawLines() {
+                const { lines, moved, paths } = this
+                
+                lines.forEach((points, lIndex) => {
+                    let p1 = moved(points[0], false)
+
+                    let d = `M ${p1.x} ${p1.y}`
+
+                    points.forEach((p1, pIndex) => {
+                        const isLast = pIndex === points.length - 1
+
+                        p1 = moved(p1, !isLast)
+
+                        const p2 = moved(
+                            points[pIndex + 1] || points[points.length - 1],
+                            !isLast
+                        )
+
+                        d += `L ${p1.x} ${p1.y}`
+                    })
+
+                    paths[lIndex].setAttribute('d', d)
+                })
+            }
+
+            /**
+             * Tick
+             */
+            tick(time) {
+                const { mouse } = this
+
+                // Smooth mouse movement
+                mouse.sx += (mouse.x - mouse.sx) * 0.1
+                mouse.sy += (mouse.y - mouse.sy) * 0.1
+
+                // Mouse velocity
+                const dx = mouse.x - mouse.lx
+                const dy = mouse.y - mouse.ly
+                const d = Math.hypot(dx, dy)
+
+                mouse.v = d
+                mouse.vs += (d - mouse.vs) * 0.1
+                mouse.vs = Math.min(100, mouse.vs)
+
+                // Mouse last position
+                mouse.lx = mouse.x
+                mouse.ly = mouse.y
+
+                // Mouse angle
+                mouse.a = Math.atan2(dy, dx)
+
+                // Animation
+                this.style.setProperty('--x', `${mouse.sx}px`)
+                this.style.setProperty('--y', `${mouse.sy}px`)
+
+                this.movePoints(time)
+                this.drawLines()
+                
+                requestAnimationFrame(this.tick.bind(this))
+            }
+        }
+
+        customElements.define('a-waves', AWaves)
+
+        // API Configuration
+        const API_BASE_URL = 'https://your-api-endpoint.com'; // Replace with your actual API endpoint
+        
+        // Global variables
+        let currentTrackIndex = -1;
+        let currentPlaylist = [];
+        let isPlaying = false;
+        let audioElement = null;
+        let progressInterval = null;
+        let impressions = 0;
+        let selectedDecades = [];
+        
+        // Helper functions
+        function showCreatePlaylist() {
+            alert("Create custom playlist feature coming soon! 🎵");
+        }
+
+        function toggleTheme() {
+            const body = document.body;
+            const currentTheme = body.getAttribute('data-theme');
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            body.setAttribute('data-theme', newTheme);
+            
+            // Update theme toggle icon
+            const themeToggle = document.querySelector('.theme-toggle');
+            themeToggle.textContent = newTheme === 'light' ? '🌙' : '☀️';
+            
+            // Update loader color based on theme
+            document.documentElement.style.setProperty('--loader-color', newTheme === 'light' ? '#a991b1' : '#ff9800');
+            
+            // Save theme preference
+            localStorage.setItem('themePreference', newTheme);
+        }
+
+        function selectThemeOption(element, theme) {
+            // Remove selected class from all options
+            document.querySelectorAll('.theme-option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            
+            // Add selected class to clicked option
+            element.classList.add('selected');
+            
+            // Set the theme input value
+            document.getElementById('theme-input').value = theme;
+        }
+
+        function toggleDecadeFilter(element, decade) {
+            element.classList.toggle('selected');
+            
+            if (element.classList.contains('selected')) {
+                if (!selectedDecades.includes(decade)) {
+                    selectedDecades.push(decade);
+                }
+            } else {
+                selectedDecades = selectedDecades.filter(d => d !== decade);
+            }
+        }
+
+        // Questionnaire functions
+        function showArtistQuestionnaire() {
+            document.getElementById('mood-questionnaire').classList.remove('active');
+            document.getElementById('trending-playlists').classList.remove('active');
+            document.getElementById('artist-questionnaire').classList.toggle('active');
+            
+            // Update active chip
+            document.querySelectorAll('.category-chip').forEach(chip => chip.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        function showMoodQuestionnaire() {
+            document.getElementById('artist-questionnaire').classList.remove('active');
+            document.getElementById('trending-playlists').classList.remove('active');
+            document.getElementById('mood-questionnaire').classList.toggle('active');
+            
+            // Update active chip
+            document.querySelectorAll('.category-chip').forEach(chip => chip.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        function showTrendingPlaylists() {
+            document.getElementById('artist-questionnaire').classList.remove('active');
+            document.getElementById('mood-questionnaire').classList.remove('active');
+            document.getElementById('trending-playlists').classList.toggle('active');
+            
+            // Update active chip
+            document.querySelectorAll('.category-chip').forEach(chip => chip.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Load trending playlists if not already loaded
+            if (document.getElementById('trending-playlists').children.length === 0) {
+                loadTrendingPlaylists();
+            }
+        }
+
+        // Loader functions
+        function showLoader() {
+            document.querySelector('.loader-overlay').style.display = 'flex';
+        }
+
+        function hideLoader() {
+            document.querySelector('.loader-overlay').style.display = 'none';
+        }
+
+        // API functions
+        async function submitArtistQuestionnaire() {
+            const artistInput = document.getElementById('artist-input');
+            const artist = artistInput.value.trim();
+            const energy = document.getElementById('energy-slider').value;
+            const danceability = document.getElementById('danceability-slider').value;
+            
+            if (artist === '') {
+                alert('Please enter at least one artist');
+                return;
+            }
+
+            showLoader();
+
+            try {
+                // In a real implementation, you would make an API call here
+                const response = await fetch(`${API_BASE_URL}/generate-artist-playlist`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        artists: artist.split(',').map(a => a.trim()),
+                        energy: parseInt(energy) / 100,
+                        danceability: parseInt(danceability) / 100
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayPlaylistResults(data.tracks, data.playlist_name);
+                } else {
+                    throw new Error(data.error || 'Failed to generate playlist');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert(`Failed to generate playlist: ${error.message}`);
+            } finally {
+                hideLoader();
+            }
+        }
+
+        async function submitMoodQuestionnaire() {
+            const themeInput = document.getElementById('theme-input');
+            const includeArtistsInput = document.getElementById('include-artists-input');
+            const excludeArtistsInput = document.getElementById('exclude-artists-input');
+            const customPromptInput = document.getElementById('custom-prompt-input');
+            const energy = document.getElementById('mood-energy-slider').value;
+            const popularity = document.getElementById('popularity-slider').value;
+            
+            const theme = themeInput.value.trim();
+            const includeArtists = includeArtistsInput.value.trim();
+            const excludeArtists = excludeArtistsInput.value.trim();
+            const customPrompt = customPromptInput.value.trim();
+            
+            if (theme === '') {
+                alert('Please describe your theme');
+                return;
+            }
+
+            showLoader();
+
+            try {
+                // In a real implementation, you would make an API call here
+                const response = await fetch(`${API_BASE_URL}/generate-mood-playlist`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        theme,
+                        include_artists: includeArtists ? includeArtists.split(',').map(a => a.trim()) : [],
+                        exclude_artists: excludeArtists ? excludeArtists.split(',').map(a => a.trim()) : [],
+                        custom_prompt: customPrompt,
+                        decades: selectedDecades,
+                        energy: parseInt(energy) / 100,
+                        popularity: parseInt(popularity) / 100
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayPlaylistResults(data.tracks, data.playlist_name);
+                } else {
+                    throw new Error(data.error || 'Failed to generate playlist');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert(`Failed to generate playlist: ${error.message}`);
+            } finally {
+                hideLoader();
+            }
+        }
+
+        async function loadTrendingPlaylists() {
+            showLoader();
+            
+            try {
+                // In a real implementation, you would make an API call here
+                const response = await fetch(`${API_BASE_URL}/trending-playlists`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayTrendingPlaylists(data.playlists);
+                } else {
+                    throw new Error(data.error || 'Failed to load trending playlists');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert(`Failed to load trending playlists: ${error.message}`);
+            } finally {
+                hideLoader();
+            }
+        }
+
+        async function loadGenrePlaylists() {
+            showLoader();
+            
+            try {
+                // In a real implementation, you would make an API call here
+                const response = await fetch(`${API_BASE_URL}/genres`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayGenreCards(data.genres);
+                } else {
+                    throw new Error(data.error || 'Failed to load genre playlists');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert(`Failed to load genre playlists: ${error.message}`);
+            } finally {
+                hideLoader();
+            }
+        }
+
+        function displayTrendingPlaylists(playlists) {
+            const trendingContainer = document.getElementById('trending-playlists');
+            trendingContainer.innerHTML = '';
+            
+            playlists.forEach(playlist => {
+                const playlistItem = document.createElement('div');
+                playlistItem.className = 'playlist-item';
+                playlistItem.innerHTML = `
+                    <img src="${playlist.image}" alt="${playlist.name}" class="playlist-cover">
+                    <a href="${playlist.spotify_url}" class="playlist-link" target="_blank">${playlist.name}</a>
+                `;
+                trendingContainer.appendChild(playlistItem);
+            });
+        }
+
+        function displayGenreCards(genres) {
+            const genreGrid = document.querySelector('.genre-grid');
+            genreGrid.innerHTML = '';
+            
+            genres.forEach(genre => {
+                const genreCard = document.createElement('div');
+                genreCard.className = 'genre-card';
+                genreCard.innerHTML = `
+                    <div class="genre-icon"></div>
+                    <div class="genre-title">${genre.genre}</div>
+                    <div class="genre-description">${genre.description}</div>
+                    <div class="genre-stats">
+                        <span>${genre.tracks_count} tracks</span>
+                        <span>${genre.likes_count || '0'} likes</span>
+                    </div>
+                `;
+                
+                // Add click handler to load genre-specific playlists
+                genreCard.addEventListener('click', () => {
+                    loadGenrePlaylist(genre.genre);
+                });
+                
+                genreGrid.appendChild(genreCard);
+            });
+            
+            // Make genre section visible
+            document.querySelector('.top-genres').classList.add('visible');
+        }
+
+        async function loadGenrePlaylist(genre) {
+            showLoader();
+            
+            try {
+                // In a real implementation, you would make an API call here
+                const response = await fetch(`${API_BASE_URL}/genre-playlist?genre=${encodeURIComponent(genre)}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayPlaylistResults(data.tracks, `${genre} Mix`);
+                } else {
+                    throw new Error(data.error || `Failed to load ${genre} playlist`);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert(`Failed to load ${genre} playlist: ${error.message}`);
+            } finally {
+                hideLoader();
+            }
+        }
+
+        function displayPlaylistResults(tracks, playlistName) {
+            const resultsHTML = `
+                <div class="playlist-results">
+                    <h3>Your Personalized Playlist: ${playlistName}</h3>
+                    <div class="tracks-list">
+                        ${tracks.map((track, index) => `
+                            <div class="track-item" onclick="playTrack(${index}, ${JSON.stringify(tracks)})">
+                                <span class="track-number">${index + 1}.</span>
+                                <img src="${track.image || 'https://via.placeholder.com/50'}" alt="${track.album || 'Album cover'}" class="track-image">
+                                <div class="track-info">
+                                    <a href="${track.spotify_url || '#'}" class="track-name" target="_blank">${track.name}</a>
+                                    <span class="track-artist">${track.artist}</span>
+                                </div>
+                                ${track.preview_url ? `
+                                    <audio controls class="track-preview">
+                                        <source src="${track.preview_url}" type="audio/mpeg">
+                                    </audio>
+                                ` : ''}
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="playlist-actions">
+                        <button class="save-playlist-btn" onclick="savePlaylistToSpotify(${JSON.stringify(tracks)}, '${playlistName}')">
+                            Save to Spotify
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            const resultsContainer = document.getElementById('playlist-results-container');
+            resultsContainer.innerHTML = resultsHTML;
+            resultsContainer.style.display = 'block';
+            
+            // Add visible class after a short delay to trigger animation
+            setTimeout(() => {
+                document.querySelector('.playlist-results').classList.add('visible');
+            }, 50);
+            
+            // Scroll to results
+            resultsContainer.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        async function savePlaylistToSpotify(tracks, playlistName) {
+            showLoader();
+            
+            try {
+                // In a real implementation, you would need Spotify OAuth here
+                const response = await fetch(`${API_BASE_URL}/save-playlist`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('spotify_token')}`
+                    },
+                    body: JSON.stringify({
+                        name: playlistName,
+                        tracks: tracks.map(t => t.id)
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert(`Playlist "${playlistName}" saved successfully to your Spotify account!`);
+                } else {
+                    throw new Error(data.error || 'Failed to save playlist');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert(`Failed to save playlist: ${error.message}`);
+            } finally {
+                hideLoader();
+            }
+        }
+
+        // Music player functions
+        function playTrack(index, playlist) {
+            currentTrackIndex = index;
+            currentPlaylist = playlist;
+            const track = playlist[index];
+            
+            // Stop any currently playing audio
+            if (audioElement) {
+                audioElement.pause();
+                clearInterval(progressInterval);
+            }
+            
+            // Create new audio element
+            audioElement = new Audio(track.preview_url || 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3');
+            
+            // Update mini player
+            document.getElementById('mini-player-image').src = track.image || 'https://via.placeholder.com/50';
+            document.getElementById('mini-player-title').textContent = track.name;
+            document.getElementById('mini-player-artist').textContent = track.artist;
+            document.getElementById('play-pause-btn').textContent = '⏸';
+            
+            // Show mini player
+            document.querySelector('.mini-player').classList.add('active');
+            
+            // Set up event listeners
+            audioElement.addEventListener('play', () => {
+                isPlaying = true;
+                document.getElementById('play-pause-btn').textContent = '⏸';
+                updateProgressBar();
+            });
+            
+            audioElement.addEventListener('pause', () => {
+                isPlaying = false;
+                document.getElementById('play-pause-btn').textContent = '▶';
+                clearInterval(progressInterval);
+            });
+            
+            audioElement.addEventListener('ended', () => {
+                skipNextTrack();
+            });
+            
+            // Start playback
+            audioElement.play();
+        }
+
+        function togglePlayPause() {
+            if (!audioElement) return;
+            
+            if (isPlaying) {
+                audioElement.pause();
+            } else {
+                audioElement.play();
+            }
+        }
+
+        function skipNextTrack() {
+            if (currentPlaylist.length === 0 || currentTrackIndex === -1) return;
+            
+            const nextIndex = (currentTrackIndex + 1) % currentPlaylist.length;
+            playTrack(nextIndex, currentPlaylist);
+        }
+
+        function skipPreviousTrack() {
+            if (currentPlaylist.length === 0 || currentTrackIndex === -1) return;
+            
+            const prevIndex = (currentTrackIndex - 1 + currentPlaylist.length) % currentPlaylist.length;
+            playTrack(prevIndex, currentPlaylist);
+        }
+
+        function updateProgressBar() {
+            clearInterval(progressInterval);
+            
+            progressInterval = setInterval(() => {
+                if (!audioElement) return;
+                
+                const currentTime = audioElement.currentTime;
+                const duration = audioElement.duration || 30; // Default to 30s for previews
+                
+                // Update progress bar
+                const progressPercent = (currentTime / duration) * 100;
+                document.getElementById('progress-fill').style.width = `${progressPercent}%`;
+                
+                // Update time displays
+                document.getElementById('current-time').textContent = formatTime(currentTime);
+                document.getElementById('duration').textContent = formatTime(duration);
+            }, 100);
+        }
+
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+        }
+
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', () => {
+            // Load theme preference
+            const savedTheme = localStorage.getItem('themePreference') || 
+                             (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            document.body.setAttribute('data-theme', savedTheme);
+            document.querySelector('.theme-toggle').textContent = savedTheme === 'light' ? '🌙' : '☀️';
+            
+            // Initialize sliders
+            document.getElementById('energy-slider').addEventListener('input', function() {
+                document.getElementById('energy-value').textContent = `${this.value}%`;
+            });
+            
+            document.getElementById('danceability-slider').addEventListener('input', function() {
+                document.getElementById('danceability-value').textContent = `${this.value}%`;
+            });
+            
+            document.getElementById('mood-energy-slider').addEventListener('input', function() {
+                document.getElementById('mood-energy-value').textContent = `${this.value}%`;
+            });
+            
+            document.getElementById('popularity-slider').addEventListener('input', function() {
+                document.getElementById('popularity-value').textContent = `${this.value}%`;
+            });
+            
+            // Load genre cards when the page loads
+            loadGenrePlaylists();
+            
+            // Initialize impressions counter
+            impressions = parseInt(localStorage.getItem('impressions')) || 0;
+            impressions++;
+            localStorage.setItem('impressions', impressions);
+            document.getElementById('impressions-counter').textContent = impressions.toLocaleString();
+            
+            // Check scroll position for animation triggers
+            checkScroll();
+        });
+
+        // Parallax effect for genre section
+        function checkScroll() {
+            const genreSection = document.querySelector('.top-genres');
+            const rect = genreSection.getBoundingClientRect();
+            const windowHeight = window.innerHeight;
+            
+            // If the genre section is in view
+            if (rect.top <= windowHeight * 0.75) {
+                genreSection.classList.add('visible');
+            }
+        }
+
+        // Initialize scroll event listener
+        window.addEventListener('scroll', checkScroll);
+        window.addEventListener('load', checkScroll);
+    </script>
+</body>
+</html>�� 2-file:///d:/xampp/htdocs/php_files/ghghgh.html
