@@ -1,4 +1,4 @@
-��<!DOCTYPE html>
+œï<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -1252,7 +1252,7 @@
 
         <!-- Stats Counter -->
         <div class="stats-counter">
-            <span class="stats-icon">👥</span>
+            <span class="stats-icon">ðŸ‘¥</span>
             <span id="impressions-counter">0</span> users connected
         </div>
 
@@ -1365,9 +1365,9 @@
                 </div>
             </div>
             <div class="mini-player-controls">
-                <button class="mini-player-btn" onclick="skipPreviousTrack()">⏮</button>
-                <button class="mini-player-btn" onclick="togglePlayPause()" id="play-pause-btn">▶</button>
-                <button class="mini-player-btn" onclick="skipNextTrack()">⏭</button>
+                <button class="mini-player-btn" onclick="skipPreviousTrack()">â®</button>
+                <button class="mini-player-btn" onclick="togglePlayPause()" id="play-pause-btn">â–¶</button>
+                <button class="mini-player-btn" onclick="skipNextTrack()">â­</button>
             </div>
             <div class="mini-player-progress">
                 <span class="mini-player-time" id="current-time">0:00</span>
@@ -1379,7 +1379,7 @@
         </div>
 
         <button class="floating-action" onclick="showCreatePlaylist()">+</button>
-        <div class="theme-toggle" onclick="toggleTheme()">☀️</div>
+        <div class="theme-toggle" onclick="toggleTheme()">â˜€ï¸</div>
     </div>
 
     <script>
@@ -1743,7 +1743,7 @@
         
         // Helper functions
         function showCreatePlaylist() {
-            alert("Create custom playlist feature coming soon! 🎵");
+            alert("Create custom playlist feature coming soon! ðŸŽµ");
         }
 
         function toggleTheme() {
@@ -1754,7 +1754,7 @@
             
             // Update theme toggle icon
             const themeToggle = document.querySelector('.theme-toggle');
-            themeToggle.textContent = newTheme === 'light' ? '🌙' : '☀️';
+            themeToggle.textContent = newTheme === 'light' ? 'ðŸŒ™' : 'â˜€ï¸';
             
             // Update loader color based on theme
             document.documentElement.style.setProperty('--loader-color', newTheme === 'light' ? '#a991b1' : '#ff9800');
@@ -2156,7 +2156,7 @@
             document.getElementById('mini-player-image').src = track.image || 'https://via.placeholder.com/50';
             document.getElementById('mini-player-title').textContent = track.name;
             document.getElementById('mini-player-artist').textContent = track.artist;
-            document.getElementById('play-pause-btn').textContent = '⏸';
+            document.getElementById('play-pause-btn').textContent = 'â¸';
             
             // Show mini player
             document.querySelector('.mini-player').classList.add('active');
@@ -2164,13 +2164,13 @@
             // Set up event listeners
             audioElement.addEventListener('play', () => {
                 isPlaying = true;
-                document.getElementById('play-pause-btn').textContent = '⏸';
+                document.getElementById('play-pause-btn').textContent = 'â¸';
                 updateProgressBar();
             });
             
             audioElement.addEventListener('pause', () => {
                 isPlaying = false;
-                document.getElementById('play-pause-btn').textContent = '▶';
+                document.getElementById('play-pause-btn').textContent = 'â–¶';
                 clearInterval(progressInterval);
             });
             
@@ -2237,7 +2237,7 @@
             const savedTheme = localStorage.getItem('themePreference') || 
                              (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
             document.body.setAttribute('data-theme', savedTheme);
-            document.querySelector('.theme-toggle').textContent = savedTheme === 'light' ? '🌙' : '☀️';
+            document.querySelector('.theme-toggle').textContent = savedTheme === 'light' ? 'ðŸŒ™' : 'â˜€ï¸';
             
             // Initialize sliders
             document.getElementById('energy-slider').addEventListener('input', function() {
@@ -2286,4 +2286,4 @@
         window.addEventListener('load', checkScroll);
     </script>
 </body>
-</html>�� 2-file:///d:/xampp/htdocs/php_files/ghghgh.html
+</html>
